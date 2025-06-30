@@ -41,7 +41,6 @@ services:
     env: docker
     dockerfilePath: ./app/backend/Dockerfile # Path to your backend Dockerfile
     dockerContext: ./app/backend # Context for backend Dockerfile
-    # Assumes your Dockerfile's CMD or ENTRYPOINT handles the start, e.g., uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PORT
         value: 8000 # The port your backend listens on inside the container
@@ -66,12 +65,11 @@ services:
     env: docker
     dockerfilePath: ./app/frontend/Dockerfile # Path to your frontend Dockerfile
     dockerContext: ./app/frontend # Context for frontend Dockerfile
-    # Assumes your Dockerfile's CMD or ENTRYPOINT starts Nginx
     envVars:
       - key: PORT
         value: 80 # Nginx default port inside container, Render will map to this
       # Your frontend needs to know where your backend API is (its internal hostname and port)
-      # Removed 'value' field and changed 'property: url' to 'host' and added 'port'
+      # Changed 'property: url' to 'host' and added 'port' env var
       - key: REACT_APP_BACKEND_HOST # Renamed for clarity to indicate it's a host
         fromService:
           type: web

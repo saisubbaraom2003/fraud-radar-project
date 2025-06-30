@@ -3,7 +3,7 @@
 
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim-buster
-# Using -slim-buster for a smaller image
+# Using -slim-buster for a smaller image <-- THIS COMMENT IS NOW ON ITS OWN LINE
 
 # Set the working directory in the container
 WORKDIR /app/backend # Set specific workdir for clarity
