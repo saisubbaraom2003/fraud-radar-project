@@ -1,4 +1,4 @@
 [core]
     remote = data-store
 ['remote "data-store"']
-    url = s3://froudradar/fraud-radar-project-data
+    url = s3://froudrader/fraud-radar-project-data
