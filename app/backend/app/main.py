@@ -5,7 +5,6 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-# Removed mlflow imports, as backend will load locally now
 
 # Define input schema (no change)
 class InputData(BaseModel):
@@ -54,7 +53,7 @@ app = FastAPI()
 # Enable CORS for frontend (no change)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", os.getenv("FRONTEND_URL")], # Added FRONTEND_URL for Render
+    allow_origins=["http://localhost:3000", os.getenv("FRONTEND_URL")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -65,15 +64,15 @@ model = None
 scaler = None
 model_load_status = "Not attempted"
 
-# --- Model loading logic at startup (local file loading) ---
+# --- Model loading logic at startup (local file loading from new path) ---
 @app.on_event("startup")
 async def load_ml_artifacts_local():
     global model, scaler, model_load_status
 
     # Define the expected paths of the model and scaler within the container
-    # Since WORKDIR is /app and we copied 'models' to /app/models
-    model_path = os.path.join("/app", "models", "best_model.pkl")
-    scaler_path = os.path.join("/app", "models", "scaler.pkl")
+    # Since the entire repo is copied to /usr/src/app, models/ is now at /usr/src/app/models/
+    model_path = os.path.join("/usr/src/app", "models", "best_model.pkl")
+    scaler_path = os.path.join("/usr/src/app", "models", "scaler.pkl")
 
     try:
         if not os.path.exists(model_path):
@@ -106,7 +105,7 @@ def predict(data: InputData):
     X = data.to_array().reshape(1, -1)
     X_scaled = scaler.transform(X)
     prediction = model.predict(X_scaled)[0]
-    probability = model.predict_proba(X_scaled)[0][1] # Assuming binary classification, get probability of positive class
+    probability = model.predict_proba(X_scaled)[0][1]
     return {"fraud": int(prediction), "probability": float(probability)}
 
 if __name__ == "__main__":
