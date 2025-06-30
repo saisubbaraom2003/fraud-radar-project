@@ -1,16 +1,17 @@
 # fraud-radar-project/render.yaml
 # Render Blueprint to deploy Fraud Radar project
 
-services:
-  # 1. PostgreSQL Database for MLflow Tracking (and potentially Backend)
-  # IMPORTANT: Free tier Postgres on Render expires after 30 days!
-  # This is NOT for production data unless you upgrade the plan.
-  - type: postgres
-    name: fraudradar-db
+# 1. PostgreSQL Database for MLflow Tracking (and potentially Backend)
+# IMPORTANT: Free tier Postgres on Render expires after 30 days!
+# This is NOT for production data unless you upgrade the plan.
+databases: # <--- MOVED TO HERE, AND NO 'type' FIELD
+  - name: fraudradar-db # Your database name
     plan: free # Use 'starter' or 'standard' for production
     databaseName: fraudradar_db
     user: fraudradar_user
+    # region: ap-south-1 # Optional: Specify your region if you want to fix it. Render tries to place them in same region as services.
 
+services:
   # 2. MLflow Tracking Server
   - type: web # Using 'web' if you want to access the MLflow UI publicly
     name: fraudradar-mlflow
