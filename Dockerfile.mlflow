@@ -10,3 +10,5 @@ WORKDIR /app/mlflow
 RUN pip install --no-cache-dir mlflow "psycopg2-binary>=2.9.1" boto3
 
 # No CMD here, as render.yaml will provide the startCommand to run the MLflow server.
+# Add this at the end of Dockerfile.mlflow
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "$(DATABASE_URL)", "--default-artifact-root", "s3://$(MLFLOW_ARTIFACT_BUCKET_NAME)/mlruns/"]
