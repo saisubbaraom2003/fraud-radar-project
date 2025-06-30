@@ -6,20 +6,23 @@ FROM python:3.9-slim-buster
 # Using -slim-buster for a smaller image
 
 # Set the working directory in the container
-WORKDIR /app # <--- CHANGED: Set working directory to /app for simplicity within container
+WORKDIR /app
+# Set specific workdir for simplicity within container
 
 # Copy the requirements file into the container
-COPY app/backend/requirements.txt ./requirements.txt # <--- CHANGED PATH
+COPY app/backend/requirements.txt ./requirements.txt
+# Path changed from relative to WORKDIR to relative to repo root
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # Copy the backend application code into the container
-COPY app/backend/app ./app # <--- CHANGED PATH
+COPY app/backend/app ./app
+# Path changed from relative to WORKDIR to relative to repo root
 
 # Copy the models folder from the repository root into the container
 # This assumes your models folder is at the root level of your Git repo
-COPY models ./models # <--- NEW LINE: To copy models into the container
+COPY models ./models
 
 # The command to run when the container launches
 # Uvicorn will bind to 0.0.0.0 and use the PORT environment variable provided by Render.
