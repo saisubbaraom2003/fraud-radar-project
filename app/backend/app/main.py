@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Define input schema (no change)
+# Define input schema
 class InputData(BaseModel):
     Time: float
     V1: float
@@ -47,10 +47,10 @@ class InputData(BaseModel):
             self.V27, self.V28, self.Amount
         ])
 
-# Initialize FastAPI app (no change)
+# Initialize FastAPI app
 app = FastAPI()
 
-# Enable CORS for frontend (no change)
+# Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", os.getenv("FRONTEND_URL")],
@@ -64,7 +64,7 @@ model = None
 scaler = None
 model_load_status = "Not attempted"
 
-# --- Model loading logic at startup (local file loading from new path) ---
+# --- Model loading logic at startup (local file loading from /usr/src/app/models/) ---
 @app.on_event("startup")
 async def load_ml_artifacts_local():
     global model, scaler, model_load_status
@@ -90,12 +90,12 @@ async def load_ml_artifacts_local():
         print(model_load_status)
         raise RuntimeError(f"Failed to load ML artifacts locally: {e}") from e
 
-# Basic root endpoint (updated to show model status)
+# Basic root endpoint
 @app.get("/")
 def root():
     return {"message": "FraudRadar backend is running!", "model_status": model_load_status}
 
-# Prediction endpoint (no change)
+# Prediction endpoint
 @app.post("/predict")
 def predict(data: InputData):
     if model is None or scaler is None:

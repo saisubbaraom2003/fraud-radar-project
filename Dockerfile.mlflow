@@ -1,14 +1,15 @@
-# fraud-radar-project/Dockerfile.mlflow
+# Dockerfile.mlflow
+# Dockerfile for the MLflow Tracking Server
 
-# Use a lightweight Python base image
 FROM python:3.9-slim-buster
 
-# Set the working directory inside the container
-WORKDIR /app/mlflow
+WORKDIR /app
 
-# Install MLflow, the PostgreSQL client library (psycopg2-binary), and boto3 for S3 artifact storage
-RUN pip install --no-cache-dir mlflow "psycopg2-binary>=2.9.1" boto3
+# Copy requirements for MLflow server
+COPY requirements_mlflow.txt .
 
-# No CMD here, as render.yaml will provide the startCommand to run the MLflow server.
-# Add this at the end of Dockerfile.mlflow
+# Install dependencies
+RUN pip install --no-cache-dir --upgrade -r requirements_mlflow.txt
+
+# Command to run the MLflow server
 CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "$(DATABASE_URL)", "--default-artifact-root", "s3://$(MLFLOW_ARTIFACT_BUCKET_NAME)/mlruns/"]

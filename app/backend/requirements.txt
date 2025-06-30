@@ -1,8 +1,6 @@
-uvicorn[standard]
-pydantic
 fastapi==0.115.14
+uvicorn==0.35.0
 numpy==2.0.2
 joblib==1.5.1
-scikit-learn==1.6.1 # Essential if your model uses scikit-learn
+scikit-learn==1.6.1
 python-dotenv
-# Removed mlflow and boto3 as backend loads models locally now

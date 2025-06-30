@@ -1,0 +1,3 @@
+mlflow
+psycopg2-binary # For PostgreSQL backend store
+boto3 # For S3 artifact store

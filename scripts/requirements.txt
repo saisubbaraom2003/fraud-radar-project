@@ -1,13 +1,6 @@
- 
-# scripts/requirements.txt
-pandas
-scikit-learn
-imbalanced-learn
-matplotlib
-seaborn
-xgboost
-mlflow
-prefect
-boto3
-joblib
+fastapi==0.115.14
+uvicorn==0.35.0
+numpy==2.0.2
+joblib==1.5.1
+scikit-learn==1.6.1
 python-dotenv

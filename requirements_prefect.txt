@@ -1,0 +1,6 @@
+prefect
+mlflow # If your Prefect flows interact with MLflow
+boto3 # If your Prefect flows interact with S3 directly (e.g., DVC)
+scikit-learn # If your Prefect flows use scikit-learn for training
+joblib # If your Prefect flows use joblib
+numpy # If your Prefect flows use numpy
