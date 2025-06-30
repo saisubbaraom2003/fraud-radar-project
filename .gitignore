@@ -59,7 +59,8 @@ venv.bak/
 
 # Project-specific
 mlruns/
-models/*
+models/
+!models/*.pkl
 !models/.gitkeep
 # data/raw/* # <--- REMOVE OR COMMENT OUT THIS LINE
 !data/raw/.gitkeep # Keep this if you want the .gitkeep file itself to be versioned
