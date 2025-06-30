@@ -1,1 +1,73 @@
- 
+# docker-compose.yml
+# This file is the maestro, orchestrating all your services.
+# Defines and runs the multi-container application.
+
+# The 'version' attribute is obsolete and will be ignored in newer Docker Compose versions.
+# Removing it to avoid the warning.
+
+services:
+  # Backend API Service (FastAPI)
+  backend:
+    build:
+      context: ./app/backend
+      dockerfile: Dockerfile
+    container_name: fraudradar_backend
+    env_file:
+      - .env # Ensure your .env file exists in the project root
+    volumes:
+      # CRITICAL CHANGE: Mounts the local models directory to /models in the container.
+      # This matches the path '/models/best_model.pkl' that your backend's main.py was looking for.
+      - ./models:/models:ro 
+      # Mount backend code for live reloading in development
+      - ./app/backend:/app
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - mlflow
+
+  # Frontend Service (React)
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile
+    container_name: fraudradar_frontend
+    ports:
+      - "3000:80" # Nginx serves on port 80 inside the container
+    depends_on:
+      - backend
+
+  # MLflow Tracking Server
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: fraudradar_mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount local directory to persist MLflow data
+      - ./mlruns:/mlruns
+    # The command points to the mounted volume for experiment storage.
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri file:///mlruns
+
+  # Service to run the ML pipeline on demand
+  pipeline:
+    build:
+      context: . # The build context is the root of the project
+      dockerfile: scripts/Dockerfile.pipeline # Use the dedicated Dockerfile for the pipeline
+    container_name: fraudradar_pipeline
+    env_file:
+      - .env # Ensure your .env file exists in the project root and has needed vars
+    environment: 
+      - MLFLOW_TRACKING_URI=http://mlflow:5000 # THIS IS CRUCIAL for pipeline to log to MLflow server
+    volumes:
+      # Mount your local directories to ensure live updates and data persistence
+      # These mounts will override content copied by the Dockerfile for development
+      - ./scripts:/app/pipeline_env/scripts # Mount local scripts to the container's script dir
+      - ./data:/app/pipeline_env/data
+      - ./models:/app/pipeline_env/models
+      - ./mlruns:/app/pipeline_env/mlruns
+      - ./.env:/app/pipeline_env/.env:ro # Mount .env file if your pipeline script needs it directly
+    working_dir: /app/pipeline_env # Set the working directory for the command
+    command: python scripts/main_pipeline.py # Command to execute the Prefect flow
+    depends_on:
+      - mlflow # Ensure MLflow is running if your pipeline interacts with it

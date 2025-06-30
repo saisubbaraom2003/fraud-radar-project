@@ -1,1 +1,9 @@
  
+# app/backend/requirements.txt
+fastapi
+uvicorn[standard]
+pydantic
+joblib
+scikit-learn
+numpy
+python-dotenv

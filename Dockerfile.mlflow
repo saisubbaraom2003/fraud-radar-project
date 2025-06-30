@@ -1,0 +1,12 @@
+# fraud-radar-project/Dockerfile.mlflow
+
+# Use a lightweight Python base image
+FROM python:3.9-slim-buster
+
+# Set the working directory inside the container
+WORKDIR /app/mlflow
+
+# Install MLflow, the PostgreSQL client library (psycopg2-binary), and boto3 for S3 artifact storage
+RUN pip install --no-cache-dir mlflow "psycopg2-binary>=2.9.1" boto3
+
+# No CMD here, as render.yaml will provide the startCommand to run the MLflow server.

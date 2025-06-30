@@ -1,1 +1,13 @@
  
+# scripts/requirements.txt
+pandas
+scikit-learn
+imbalanced-learn
+matplotlib
+seaborn
+xgboost
+mlflow
+prefect
+boto3
+joblib
+python-dotenv

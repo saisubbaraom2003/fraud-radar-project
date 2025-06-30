@@ -1,1 +1,70 @@
  
+# .github/workflows/cd.yml
+# Continuous Deployment: Build and push Docker images, then deploy to EC2.
+
+name: CD - Build, Push, and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/backend
+          file: ./app/backend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/fraudradar-backend:latest
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/frontend
+          file: ./app/frontend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/fraudradar-frontend:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push # This job runs only after build-and-push is successful
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Navigate to the project directory on the server
+            cd /home/ubuntu/fraud-radar-project # Adjust path if needed
+
+            # Create the .env file from the GitHub secret
+            echo "${{ secrets.ENV_FILE_CONTENT }}" | base64 --decode > .env
+
+            # Update the docker-compose.yml to use the pushed images
+            # Replace placeholder with your Docker Hub username
+            sed -i 's|image: backend-placeholder|image: ${{ secrets.DOCKERHUB_USERNAME }}/fraudradar-backend:latest|g' docker-compose.prod.yml
+            sed -i 's|image: frontend-placeholder|image: ${{ secrets.DOCKERHUB_USERNAME }}/fraudradar-frontend:latest|g' docker-compose.prod.yml
+
+            # Pull the latest images from Docker Hub
+            docker-compose -f docker-compose.prod.yml pull
+
+            # Stop and restart the services
+            docker-compose -f docker-compose.prod.yml up -d --force-recreate

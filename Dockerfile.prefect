@@ -1,0 +1,28 @@
+# fraud-radar-project/Dockerfile.prefect
+
+# Use a lean Python base image
+FROM python:3.9-slim-buster
+
+# Set the working directory inside the container
+WORKDIR /app/prefect
+
+# Copy the requirements file from your local 'scripts/' directory
+# Make sure scripts/requirements.txt contains Prefect, boto3, joblib, pandas, scikit-learn, etc.
+COPY scripts/requirements.txt ./scripts/requirements.txt
+RUN pip install --no-cache-dir -r scripts/requirements.txt
+
+# Ensure Prefect itself is installed (if not already in requirements.txt)
+# RUN pip install --no-cache-dir prefect
+
+# If your Prefect flows also log to MLflow, install mlflow client
+# RUN pip install --no-cache-dir mlflow
+
+# Copy your scripts directory
+COPY scripts/ ./scripts/
+
+# Copy other necessary project directories required by your pipeline
+# Paths are relative to the project root where Dockerfile.prefect resides
+COPY data/ ./data/
+COPY models/ ./models/
+
+# No CMD here, as render.yaml will provide the startCommand to run the Prefect worker.

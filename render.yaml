@@ -1,0 +1,127 @@
+# fraud-radar-project/render.yaml
+# Render Blueprint to deploy Fraud Radar project
+
+services:
+  # 1. PostgreSQL Database for MLflow Tracking (and potentially Backend)
+  # IMPORTANT: Free tier Postgres on Render expires after 30 days!
+  # This is NOT for production data unless you upgrade the plan.
+  - type: postgres
+    name: fraudradar-db
+    plan: free # Use 'starter' or 'standard' for production
+    databaseName: fraudradar_db
+    user: fraudradar_user
+
+  # 2. MLflow Tracking Server
+  - type: web # Using 'web' if you want to access the MLflow UI publicly
+    name: fraudradar-mlflow
+    env: docker
+    dockerfilePath: ./Dockerfile.mlflow # Path to the MLflow Dockerfile
+    dockerContext: . # Context is '.' because Dockerfile.mlflow is at the root
+    # Ensure your MLflow server inside the container listens on $PORT
+    startCommand: >
+      mlflow server
+      --host 0.0.0.0
+      --port $PORT
+      --backend-store-uri ${{ env.DATABASE_URL }}
+      --default-artifact-root s3://${{ env.MLFLOW_ARTIFACT_BUCKET_NAME }}/mlruns/ # <-- UPDATED: Point to S3 Bucket
+    envVars:
+      - key: PORT
+        value: 5000 # Default MLflow UI port, Render will map to this
+      - key: DATABASE_URL # This will be injected from your Render Postgres DB
+        fromDatabase:
+          name: fraudradar-db
+          property: connectionString
+      - key: MLFLOW_ARTIFACT_BUCKET_NAME # <-- NEW: Environment variable for your MLflow S3 bucket
+        sync: false # Add this as a Render secret
+      - key: AWS_ACCESS_KEY_ID # <-- Ensure these are provided to MLflow service
+        sync: false # Add this as a Render secret
+      - key: AWS_SECRET_ACCESS_KEY # <-- Ensure these are provided to MLflow service
+        sync: false # Add this as a Render secret
+    plan: free # Free web services spin down after 15 mins of inactivity.
+    healthCheckPath: /
+
+  # 3. Backend Web Service (Python FastAPI/Flask/etc.)
+  - type: web
+    name: fraudradar-backend
+    env: docker
+    dockerfilePath: ./app/backend/Dockerfile # Path to your backend Dockerfile
+    dockerContext: ./app/backend # Context for backend Dockerfile
+    # Assumes your Dockerfile's CMD or ENTRYPOINT handles the start, e.g., uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: 8000 # The port your backend listens on inside the container
+      # Link to the MLflow tracking server
+      - key: MLFLOW_TRACKING_URI
+        # Render internal hostnames are service name. If MLflow is on 5000, specify it.
+        value: http://${{ env.FRAUDRADAR_MLFLOW_HOST }}:5000
+        fromService:
+          type: web
+          name: fraudradar-mlflow
+          property: host # Provides the internal hostname for fraudradar-mlflow service
+      - key: DATABASE_URL # If your backend also uses the same database
+        fromDatabase:
+          name: fraudradar-db
+          property: connectionString
+      # Add any other backend environment variables from your .env.example here
+      # For sensitive secrets, define them directly in the Render dashboard for the service
+    plan: free
+    healthCheckPath: /
+
+  # 4. Frontend Web Service (React/Nginx)
+  - type: web
+    name: fraudradar-frontend
+    env: docker
+    dockerfilePath: ./app/frontend/Dockerfile # Path to your frontend Dockerfile
+    dockerContext: ./app/frontend # Context for frontend Dockerfile
+    # Assumes your Dockerfile's CMD or ENTRYPOINT starts Nginx
+    envVars:
+      - key: PORT
+        value: 80 # Nginx default port inside container, Render will map to this
+      # Your frontend needs to know where your backend API is (its public URL)
+      - key: REACT_APP_BACKEND_URL # Or similar env var for your React app
+        fromService:
+          type: web
+          name: fraudradar-backend
+          property: url # Render provides the public URL for web services
+      # Make sure your React app is configured to use REACT_APP_ environment variables
+    # For React client-side routing (e.g., React Router), add rewrite rules:
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    plan: free
+    healthCheckPath: /
+
+  # 5. Prefect Pipeline Worker (as a Background Worker)
+  - type: worker
+    name: fraudradar-prefect-worker
+    env: docker
+    dockerfilePath: ./Dockerfile.prefect # Path to your Prefect Dockerfile
+    dockerContext: . # Context is '.' because Dockerfile.prefect is at the root
+    # This command starts a Prefect worker that polls for flow runs.
+    # It connects to Prefect Cloud using the API_URL and API_KEY.
+    startCommand: >
+      prefect worker start --pool default-docker-pool --type docker
+    envVars:
+      - key: PREFECT_API_URL
+        value: "YOUR_PREFECT_CLOUD_API_URL_HERE" # <-- PASTE YOUR PREFECT CLOUD API URL
+      - key: PREFECT_API_KEY # IMPORTANT: THIS MUST BE ADDED AS A RENDER SECRET
+        sync: false # Tells Render not to sync this from Git, prompt in dashboard
+      # Other env vars your Prefect flows might need, like S3 credentials
+      - key: MLFLOW_TRACKING_URI # Your Prefect flows will log to MLflow
+        value: http://${{ env.FRAUDRADAR_MLFLOW_HOST }}:5000
+        fromService:
+          type: web
+          name: fraudradar-mlflow
+          property: host
+      - key: DATABASE_URL # If your pipeline needs DB access
+        fromDatabase:
+          name: fraudradar-db
+          property: connectionString
+      - key: AWS_ACCESS_KEY_ID # For boto3 in your pipeline (and DVC)
+        sync: false # Add this as a Render secret
+      - key: AWS_SECRET_ACCESS_KEY # For boto3 in your pipeline (and DVC)
+        sync: false # Add this as a Render secret
+      - key: S3_BUCKET_NAME # This is the bucket for your pipeline's direct artifact uploads
+        sync: false # Add this as a Render secret
+    plan: free

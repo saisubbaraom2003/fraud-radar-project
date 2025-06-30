@@ -1,0 +1,19 @@
+# # scripts/Dockerfile.pipeline
+
+# # Use a lean Python base image
+# FROM python:3.9-slim-buster
+
+# # Set the working directory inside the container
+# WORKDIR /app/pipeline_env
+
+# # Copy the requirements file from your local 'scripts/' directory
+# COPY scripts/requirements.txt .
+# RUN pip install --no-cache-dir -r requirements.txt
+
+# # Copy all the pipeline scripts from your local 'scripts/' directory
+# COPY scripts/ /app/pipeline_env/scripts/
+
+# # Copy other necessary project directories
+# COPY data/ /app/pipeline_env/data/
+# COPY models/ /app/pipeline_env/models/
+# COPY mlruns/ /app/pipeline_env/mlruns/
