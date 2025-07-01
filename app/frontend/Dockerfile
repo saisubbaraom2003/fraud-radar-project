@@ -36,7 +36,8 @@ COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy the custom Nginx configuration using its full path relative to the repo root
 # This ensures Docker finds the file even if the context interpretation is tricky.
-COPY app/frontend/nginx.conf /etc/nginx/conf.d/default.conf # <--- MODIFIED THIS LINE
+COPY app/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Removed: # <--- MODIFIED THIS LINE
 
 # Expose port 80, which Nginx listens on by default
 EXPOSE 80
