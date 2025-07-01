@@ -64,15 +64,23 @@ function FormPage() {
     );
 
     try {
-      const response = await fetch("http://localhost:8000/predict", {
+      // --- CRITICAL FIX: Changed URL to relative path for Nginx proxy ---
+      const response = await fetch("/api/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || `HTTP error! Status: ${response.status}`);
+      }
+
       const data = await response.json();
       navigate("/result", { state: { prediction: data } });
     } catch (err) {
-      alert("Error: Could not get prediction. Please try again.");
+      console.error("Prediction error:", err); // Log the actual error for debugging
+      alert(`Error: Could not get prediction. ${err.message || "Please try again."}`);
     } finally {
       setLoading(false);
     }
