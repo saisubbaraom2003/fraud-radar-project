@@ -8,9 +8,9 @@ FROM node:18-alpine AS build
 WORKDIR /app
 # Set the working directory inside the build container
 
-# Copy package.json and package-lock.json first to leverage Docker cache
-# This allows npm install to be cached if dependencies don't change
-COPY package*.json ./
+# Copy ALL application source code first
+# This ensures all files, including package.json, are present before npm install
+COPY . . # <--- MOVED THIS LINE UP
 
 # --- AGGRESSIVE NPM INSTALL FIX / DIAGNOSTICS ---
 # List contents of /app to confirm package.json is there BEFORE npm install
@@ -24,10 +24,6 @@ RUN rm -rf node_modules
 
 # Install frontend dependencies
 RUN npm install
-
-# Copy the rest of the application source code
-# This copies everything from the 'app/frontend' directory into /app in the container
-COPY . .
 
 # Build the React application for production
 # This command typically creates a 'build' directory with static assets
