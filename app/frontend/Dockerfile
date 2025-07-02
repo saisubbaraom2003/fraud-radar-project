@@ -8,16 +8,14 @@ FROM node:18-alpine AS build
 WORKDIR /app
 # Set the initial working directory inside the build container to copy the whole repo
 
-# Copy ALL application source code first from the build context (which is the repo root)
-# This ensures all files, including the nested frontend directory, are present.
+# Copy ALL application source code first from the build context (which is 'app/frontend' due to render.yaml)
 COPY . .
 
 # Change the working directory to the actual location of the frontend application
 # Now, /app/app/frontend is where package.json and source code reside within the container.
-WORKDIR /app/app/frontend # <--- CRITICAL FIX: Change WORKDIR to the actual frontend path
+WORKDIR /app/app/frontend
 
 # Install frontend dependencies
-# npm install will now find package.json in the current working directory (/app/app/frontend)
 RUN npm install
 
 # Build the React application for production
@@ -27,15 +25,16 @@ RUN npm run build
 FROM nginx:1.25-alpine
 # Using Nginx Alpine as the base image for serving the static files
 
-# Set the working directory to the Nginx HTML root
+# Set the working directory to the Nginx HTML root for clarity
 WORKDIR /usr/share/nginx/html
 
 # Copy the production build output from the 'build' stage
 # The /app/app/frontend/build directory from the first stage is copied to Nginx's html directory
-COPY --from=build /app/app/frontend/build /usr/share/nginx/html # <--- Updated source path for build output
+COPY --from=build /app/app/frontend/build /usr/share/nginx/html
 
-# Copy the custom Nginx configuration using its full path relative to the repo root
-COPY app/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy the custom Nginx configuration.
+# Since dockerContext is ./app/frontend, nginx.conf is at the root of the context.
+COPY nginx.conf /etc/nginx/conf.d/default.conf # <--- CORRECTED THIS LINE
 
 # Expose port 80, which Nginx listens on by default
 EXPOSE 80
