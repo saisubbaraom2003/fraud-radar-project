@@ -1,33 +1,28 @@
-# Stage 1: Build the React application
+# Stage 1: Build the React app
 FROM node:18-alpine AS build
 WORKDIR /app
 
-# Copy all repo files to /app
 COPY . .
 
-# Move into the actual frontend folder
+# Build from the frontend source directory
 WORKDIR /app/app/frontend
-
-# Install dependencies
 RUN npm install
+RUN npm run build
 
-# Debug before build
-RUN echo "🔧 Current directory: $(pwd)" && ls -l
+# Move the build folder to a known root-level location
+RUN mv build /app/build
 
-# Build app and check for errors
-RUN npm run build || (echo "❌ Build failed" && exit 1)
+# Debug
+RUN echo "✅ Build moved to /app/build" && ls -l /app/build
 
-# Debug after build
-RUN echo "✅ Directory after build:" && ls -l
-
-# Stage 2: Serve the application with Nginx
+# Stage 2: Serve with Nginx
 FROM nginx:1.25-alpine
 WORKDIR /usr/share/nginx/html
 
-# Copy build output
-COPY --from=build /app/app/frontend/build /usr/share/nginx/html
+# Copy from known location
+COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy and apply custom Nginx config
+# Nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
