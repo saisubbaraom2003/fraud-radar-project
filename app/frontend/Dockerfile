@@ -30,8 +30,7 @@ FROM nginx:1.25-alpine
 # Using Nginx Alpine as the base image for serving the static files
 
 # Explicitly create the Nginx HTML directory to ensure it exists
-# This addresses the "no such file or directory" error for /usr/share/nginx
-RUN mkdir -p /usr/share/nginx/html # <--- ADDED THIS LINE
+RUN mkdir -p /usr/share/nginx/html
 
 # Set the working directory to the Nginx HTML root for clarity
 WORKDIR /usr/share/nginx/html
@@ -40,13 +39,33 @@ WORKDIR /usr/share/nginx/html
 # The /app/build directory from the first stage is copied to Nginx's html directory
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy the custom Nginx configuration.
-# Since dockerContext is ./app/frontend, nginx.conf is at the root of the context.
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# --- CRITICAL FIX: Directly write Nginx config and override CMD ---
+# Remove the default Nginx configuration to prevent conflicts
+RUN rm -f /etc/nginx/conf.d/default.conf
+
+# Write our custom Nginx configuration directly into the file
+RUN echo 'server { \
+  listen 80; \
+  root /usr/share/nginx/html; \
+  index index.html; \
+  \
+  location / { \
+    try_files $uri /index.html; \
+  } \
+  \
+  location /api { \
+    proxy_pass http://fraudradar-backend:8000; \
+    proxy_set_header Host $host; \
+    proxy_set_header X-Real-IP $remote_addr; \
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
+    proxy_set_header X-Forwarded-Proto $scheme; \
+  } \
+}' > /etc/nginx/conf.d/default.conf
 
 # Expose port 80, which Nginx listens on by default
 EXPOSE 80
 
-# The command to start Nginx when the container launches
-# 'daemon off;' keeps Nginx running in the foreground, essential for Docker containers
-CMD ["nginx", "-g", "daemon off;"]
+# Override the default Nginx CMD to explicitly use our configuration
+# This bypasses Render's docker-entrypoint.sh if it's causing issues.
+CMD ["nginx", "-g", "daemon off;"] # <--- Overriding CMD
+
