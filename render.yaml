@@ -2,7 +2,7 @@
     name: fraudradar-frontend
     env: docker
     dockerfilePath: ./app/frontend/Dockerfile
-    dockerContext: ./app/frontend # ✅ This is key — it matches COPY . .
+    dockerContext: . # ✅ Must be the root of your repo so COPY . . works properly
     envVars:
       - key: PORT
         value: 80
