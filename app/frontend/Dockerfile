@@ -32,9 +32,10 @@ WORKDIR /usr/share/nginx/html
 # The /app/app/frontend/build directory from the first stage is copied to Nginx's html directory
 COPY --from=build /app/app/frontend/build /usr/share/nginx/html
 
-# Copy the custom Nginx configuration.
-# Since dockerContext is ./app/frontend, nginx.conf is at the root of the context.
-COPY nginx.conf /etc/nginx/conf.d/default.conf # <--- CORRECTED THIS LINE
+# Copy the custom Nginx configuration to a temporary location, then move it.
+# This is a workaround for the "destination not found" error.
+COPY nginx.conf /tmp/nginx.conf # <--- Copy to /tmp first
+RUN mv /tmp/nginx.conf /etc/nginx/conf.d/default.conf # <--- Then move it to final destination
 
 # Expose port 80, which Nginx listens on by default
 EXPOSE 80
