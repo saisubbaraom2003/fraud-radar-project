@@ -34,8 +34,8 @@ COPY --from=build /app/app/frontend/build /usr/share/nginx/html
 
 # Copy the custom Nginx configuration to a temporary location, then move it.
 # This is a workaround for the "destination not found" error.
-COPY nginx.conf /tmp/nginx.conf # <--- Copy to /tmp first
-RUN mv /tmp/nginx.conf /etc/nginx/conf.d/default.conf # <--- Then move it to final destination
+COPY nginx.conf /tmp/nginx.conf
+RUN mv /tmp/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80, which Nginx listens on by default
 EXPOSE 80
