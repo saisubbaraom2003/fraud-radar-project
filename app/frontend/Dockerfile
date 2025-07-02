@@ -6,39 +6,33 @@ FROM node:18-alpine AS build
 # Using Node.js 18 Alpine as the base image for building
 
 WORKDIR /app
-# Set the working directory inside the build container
+# Set the initial working directory inside the build container to copy the whole repo
 
-# Copy ALL application source code first
-# This ensures all files, including package.json, are present before npm install
+# Copy ALL application source code first from the build context (which is the repo root)
+# This ensures all files, including the nested frontend directory, are present.
 COPY . .
 
-# --- AGGRESSIVE NPM INSTALL FIX / DIAGNOSTICS ---
-# List contents of /app to confirm package.json is there BEFORE npm install
-RUN ls -l /app  # <-- This is the output we need to see!
-
-# Clean npm cache forcefully to prevent any corrupted cache issues
-RUN npm cache clean --force
-
-# Remove any existing node_modules directory to ensure a fresh install
-RUN rm -rf node_modules
+# Change the working directory to the actual location of the frontend application
+# Now, /app/app/frontend is where package.json and source code reside within the container.
+WORKDIR /app/app/frontend # <--- CRITICAL FIX: Change WORKDIR to the actual frontend path
 
 # Install frontend dependencies
+# npm install will now find package.json in the current working directory (/app/app/frontend)
 RUN npm install
 
 # Build the React application for production
-# This command typically creates a 'build' directory with static assets
 RUN npm run build
 
 ### STAGE 2: Serve the application with Nginx ###
 FROM nginx:1.25-alpine
 # Using Nginx Alpine as the base image for serving the static files
 
-# Set the working directory to the Nginx HTML root for clarity
+# Set the working directory to the Nginx HTML root
 WORKDIR /usr/share/nginx/html
 
 # Copy the production build output from the 'build' stage
-# The /app/build directory from the first stage is copied to Nginx's html directory
-COPY --from=build /app/build /usr/share/nginx/html
+# The /app/app/frontend/build directory from the first stage is copied to Nginx's html directory
+COPY --from=build /app/app/frontend/build /usr/share/nginx/html # <--- Updated source path for build output
 
 # Copy the custom Nginx configuration using its full path relative to the repo root
 COPY app/frontend/nginx.conf /etc/nginx/conf.d/default.conf
