@@ -11,11 +11,10 @@ WORKDIR /app
 # Copy ALL application source code first
 # This ensures all files, including package.json, are present before npm install
 COPY . .
-# Removed: # <--- MOVED THIS LINE UP
 
 # --- AGGRESSIVE NPM INSTALL FIX / DIAGNOSTICS ---
 # List contents of /app to confirm package.json is there BEFORE npm install
-RUN ls -l /app
+RUN ls -l /app  # <-- This is the output we need to see!
 
 # Clean npm cache forcefully to prevent any corrupted cache issues
 RUN npm cache clean --force
