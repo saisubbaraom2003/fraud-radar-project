@@ -21,6 +21,10 @@ RUN npm install
 # Build the React application for production
 RUN npm run build
 
+# --- DIAGNOSTIC STEP: List contents after build to find the 'build' folder ---
+RUN ls -l /app/app/frontend # <--- Added this line to inspect the directory
+RUN ls -l /app # <--- Also check the top-level /app directory
+
 ### STAGE 2: Serve the application with Nginx ###
 FROM nginx:1.25-alpine
 # Using Nginx Alpine as the base image for serving the static files
