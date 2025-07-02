@@ -12,6 +12,16 @@ WORKDIR /app
 # This allows npm install to be cached if dependencies don't change
 COPY package*.json ./
 
+# --- AGGRESSIVE NPM INSTALL FIX / DIAGNOSTICS ---
+# List contents of /app to confirm package.json is there BEFORE npm install
+RUN ls -l /app
+
+# Clean npm cache forcefully to prevent any corrupted cache issues
+RUN npm cache clean --force
+
+# Remove any existing node_modules directory to ensure a fresh install
+RUN rm -rf node_modules
+
 # Install frontend dependencies
 RUN npm install
 
@@ -35,9 +45,7 @@ WORKDIR /usr/share/nginx/html
 COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy the custom Nginx configuration using its full path relative to the repo root
-# This ensures Docker finds the file even if the context interpretation is tricky.
 COPY app/frontend/nginx.conf /etc/nginx/conf.d/default.conf
-# Removed: # <--- MODIFIED THIS LINE
 
 # Expose port 80, which Nginx listens on by default
 EXPOSE 80
