@@ -10,7 +10,8 @@ WORKDIR /app
 
 # Copy ALL application source code first
 # This ensures all files, including package.json, are present before npm install
-COPY . . # <--- MOVED THIS LINE UP
+COPY . .
+# Removed: # <--- MOVED THIS LINE UP
 
 # --- AGGRESSIVE NPM INSTALL FIX / DIAGNOSTICS ---
 # List contents of /app to confirm package.json is there BEFORE npm install
