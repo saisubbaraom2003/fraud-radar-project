@@ -14,24 +14,31 @@ WORKDIR /app
 # into the /app directory inside the container.
 COPY . .
 
+# Change the working directory to the actual location of the frontend application
+# Now, /app/app/frontend is where package.json and source code reside within the container.
+WORKDIR /app/app/frontend
+
 # Install frontend dependencies
-# npm install will now find package.json directly in /app
 RUN npm install
 
 # Build the React application for production
-# This command typically creates a 'build' directory within /app
+# This command typically creates a 'build' directory within /app/app/frontend
 RUN npm run build
 
 ### STAGE 2: Serve the application with Nginx ###
 FROM nginx:1.25-alpine
 # Using Nginx Alpine as the base image for serving the static files
 
+# Explicitly create the Nginx HTML directory to ensure it exists
+# This addresses the "no such file or directory" error for /usr/share/nginx
+RUN mkdir -p /usr/share/nginx/html # <--- ADDED THIS LINE
+
 # Set the working directory to the Nginx HTML root for clarity
 WORKDIR /usr/share/nginx/html
 
 # Copy the production build output from the 'build' stage
 # The /app/build directory from the first stage is copied to Nginx's html directory
-COPY --from=build /app/build /usr/share/nginx/html # <--- Correct path now: /app/build
+COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy the custom Nginx configuration.
 # Since dockerContext is ./app/frontend, nginx.conf is at the root of the context.
