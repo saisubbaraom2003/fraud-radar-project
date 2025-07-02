@@ -2,7 +2,7 @@
     name: fraudradar-frontend
     env: docker
     dockerfilePath: ./app/frontend/Dockerfile
-    dockerContext: . # 👈 important: set context to repo root
+    dockerContext: ./app/frontend
     envVars:
       - key: PORT
         value: 80
